@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ইংরেজী অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "The word 'recalcitrant' means-",
+          options: {
+            a: "mutinous",
+            b: "compliant",
+            c: "docile",
+            d: "amenable",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'recalcitrant' (রিক্যালসিট্রেন্ট) শব্দের অর্থ জানতে চাওয়া হয়েছে। 'Recalcitrant' মানে হলো 'অবাধ্য', 'অনমনীয়', বা 'সহজেই নিয়ন্ত্রণ করা যায় না এমন'।</p><ul><li>Option (A) 'mutinous' (মিউটিনাস) মানে 'বিদ্রোহী' বা 'অবাধ্য'। এটি 'recalcitrant' এর একটি শক্তিশালী প্রতিশব্দ।</li><li>Option (B) 'compliant' (কমপ্লায়েন্ট) মানে 'আনুগত্যশীল' বা 'সহযোগী'। এটি 'recalcitrant' এর বিপরীত শব্দ।</li><li>Option (C) 'docile' (ডোসাইন) মানে 'বিনয়ী' বা 'সহজে শেখানো বা নিয়ন্ত্রণ করা যায় এমন'। এটিও 'recalcitrant' এর বিপরীত শব্দ।</li><li>Option (D) 'amenable' (অ্যামেনেবল) মানে 'সহযোগী' বা 'যুক্তি শুনতে ইচ্ছুক'। এটিও 'recalcitrant' এর বিপরীত শব্দ।</li></ul><p>সুতরাং, 'recalcitrant' এর সবচেয়ে কাছের অর্থ 'mutinous'।</p>",
+        },
+        {
+          id: 2,
+          question: "Antonym of 'Refractory' is-",
+          options: {
+            a: "Cussed",
+            b: "Intractable",
+            c: "Stubborn",
+            d: "Obedient",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'Refractory' (রিফ্র্যাকটরি) শব্দের বিপরীত শব্দ জানতে চাওয়া হয়েছে। 'Refractory' মানে হলো 'অবাধ্য', 'একগুঁয়ে', বা 'চিকিৎসায় সহজে সাড়া দেয় না এমন'।</p><ul><li>Option (A) 'Cussed' (কাসড) মানে 'বদমেজাজি' বা 'একগুঁয়ে'। এটি 'Refractory' এর প্রতিশব্দ।</li><li>Option (B) 'Intractable' (ইনট্র্যাক্টেবল) মানে 'অদম্য' বা 'নিয়ন্ত্রণ করা কঠিন'। এটিও 'Refractory' এর প্রতিশব্দ।</li><li>Option (C) 'Stubborn' (স্টাবার্ন) মানে 'একগুঁয়ে' বা 'অটল'। এটিও 'Refractory' এর প্রতিশব্দ।</li><li>Option (D) 'Obedient' (ওবিডিয়েন্ট) মানে 'আজ্ঞাবহ' বা 'বাধ্য'। এটি 'Refractory' এর বিপরীত শব্দ।</li></ul><p>সুতরাং, 'Refractory' এর বিপরীত শব্দ 'Obedient' ।</p>",
+        },
+        {
+          id: 3,
+          question: "The antonym of 'Revenge' is-",
+          options: {
+            a: "Reprisal",
+            b: "Penalty",
+            c: "Grace",
+            d: "Wrath",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে 'Revenge' (রিভেঞ্জ) শব্দের বিপরীত শব্দ জানতে চাওয়া হয়েছে। 'Revenge' মানে হলো 'প্রতিশোধ' বা 'বদলা'।</p><ul><li>Option (A) 'Reprisal' (রিপ্রাইজাল) মানে 'প্রতিশোধমূলক কাজ' বা 'পাল্টা আঘাত'। এটি 'Revenge' এর প্রতিশব্দ।</li><li>Option (B) 'Penalty' (পেনাল্টি) মানে 'শাস্তি' বা 'জরিমানা'। যদিও এর সাথে প্রতিশোধের একটি সম্পর্ক থাকতে পারে, তবে এটি সরাসরি বিপরীত শব্দ নয়।</li><li>Option (C) 'Grace' (গ্রেস) মানে 'অনুগ্রহ', 'ক্ষমা', 'দয়া' বা 'সৌজন্য'। এটি প্রতিশোধের বিপরীত ধারণা প্রকাশ করে।</li><li>Option (D) 'Wrath' (র‍্যাথ) মানে 'প্রচণ্ড রাগ' বা 'ক্রোধ'। এটি প্রতিশোধের অনুভূতির সাথে সম্পর্কিত, তবে বিপরীত শব্দ নয়।</li></ul><p>সুতরাং, 'Revenge' এর বিপরীত শব্দ 'Grace'।</p>",
+        },
+        {
+          id: 4,
+          question: "An antonym of 'Ruthless' is-",
+          options: {
+            a: "Merciful",
+            b: "Reckless",
+            c: "Careless",
+            d: "Rude",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'Ruthless' (রূথলেস) শব্দের বিপরীত শব্দ জানতে চাওয়া হয়েছে। 'Ruthless' মানে হলো 'নির্মম', 'নিষ্ঠুর' বা 'দয়ামায়াহীন'।</p><ul><li>Option (A) 'Merciful' (মার্সিফুল) মানে 'দয়ালু' বা 'ক্ষমাশীল'। এটি 'Ruthless' এর বিপরীত শব্দ।</li><li>Option (B) 'Reckless' (রেকলেস) মানে 'বেপরোয়া' বা 'অবিবেচক'। এটি 'Ruthless' এর বিপরীত শব্দ নয়।</li><li>Option (C) 'Careless' (কেয়ারলেস) মানে 'অসাবধান' বা 'উদাসীন'। এটি 'Ruthless' এর বিপরীত শব্দ নয়।</li><li>Option (D) 'Rude' (রুড) মানে 'অভদ্র' বা 'অমার্জিত'। এটি 'Ruthless' এর বিপরীত শব্দ নয়।</li></ul><p>সুতরাং, 'Ruthless' এর বিপরীত শব্দ 'Merciful'।</p>",
+        },
+        {
+          id: 5,
+          question:
+            "'Dreams are disguised fulfillments of repressed wishes.' The best synonym for the bold faced word is-",
+          options: {
+            a: "subdue",
+            b: "encourage",
+            c: "liberate",
+            d: "accomplish",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'repressed' (রিপ্রেসড) শব্দের সেরা প্রতিশব্দ জানতে চাওয়া হয়েছে। 'Repressed' মানে হলো 'দমিয়ে রাখা', 'দমন করা' বা 'চেপে রাখা'।</p><ul><li>Option (A) 'subdue' (সাবডু) মানে 'দমন করা' বা 'বশ করা'। এটি 'repressed' এর খুব কাছের অর্থ।</li><li>Option (B) 'encourage' (এনকারেজ) মানে 'উৎসাহিত করা' বা 'প্রেরণা দেওয়া'। এটি 'repressed' এর বিপরীত।</li><li>Option (C) 'liberate' (লিবরেট) মানে 'মুক্ত করা' বা 'স্বাধীন করা'। এটিও 'repressed' এর বিপরীত।</li><li>Option (D) 'accomplish' (অ্যাকমপ্লিশ) মানে 'সম্পন্ন করা' বা 'অর্জন করা'। এটি প্রাসঙ্গিক নয়।</li></ul><p>সুতরাং, 'repressed' এর সেরা প্রতিশব্দ 'subdue'।</p>",
+        },
+        {
+          id: 6,
+          question: "What is the antonym of 'Repulsion'?",
+          options: {
+            a: "Aversion",
+            b: "Attraction",
+            c: "Destitution",
+            d: "Petulance",
+          },
+          correct: "b",
+          explanation:
+            "<p>এখানে 'Repulsion' (রিপালশন) শব্দের বিপরীত শব্দ জানতে চাওয়া হয়েছে। 'Repulsion' মানে হলো 'বিকর্ষণ', 'ঘৃণা' বা 'অরুচি'।</p><ul><li>Option (A) 'Aversion' (অ্যাভারশন) মানে 'তীব্র অপছন্দ' বা 'ঘৃণা'। এটি 'Repulsion' এর প্রতিশব্দ।</li><li>Option (B) 'Attraction' (অ্যাট্রাকশন) মানে 'আকর্ষণ' বা 'টান'। এটি 'Repulsion' এর বিপরীত শব্দ।</li><li>Option (C) 'Destitution' (ডেস্টটিউশন) মানে 'দরিদ্রতা' বা 'অভাব'। এটি অপ্রাসঙ্গিক।</li><li>Option (D) 'Petulance' (পেটু লেন্স) মানে 'বদমেজাজ' বা 'খিটখিটে স্বভাব'। এটি অপ্রাসঙ্গিক।</li></ul><p>সুতরাং, 'Repulsion' এর বিপরীত শব্দ 'Attraction'।</p>",
+        },
+        {
+          id: 7,
+          question: "A synonym for 'Resentment' is-",
+          options: {
+            a: "Fear",
+            b: "Anger",
+            c: "Indignation",
+            d: "Panic",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে 'Resentment' (রিসেন্টমেন্ট) শব্দের প্রতিশব্দ জানতে চাওয়া হয়েছে। 'Resentment' মানে হলো 'বিরক্তি', 'ক্ষোভ' বা 'অসন্তুষ্টি', বিশেষত যখন মনে হয় যে অন্যায় আচরণ করা হয়েছে।</p><ul><li>Option (A) 'Fear' (ফিয়ার) মানে 'ভয়'। এটি 'Resentment' এর প্রতিশব্দ নয়।</li><li>Option (B) 'Anger' (অ্যাংগার) মানে 'রাগ'। যদিও 'Resentment' এর মধ্যে রাগ থাকতে পারে, তবে 'Indignation' আরও সুনির্দিষ্ট।</li><li>Option (C) 'Indignation' (ইনডিগনেশন) মানে 'ন্যায়সঙ্গত রাগ' বা 'তীব্র অসন্তোষ', বিশেষত যখন মনে হয় যে কোনো অন্যায় বা অবিচার হয়েছে। এটি 'Resentment' এর খুব কাছের প্রতিশব্দ।</li><li>Option (D) 'Panic' (প্যানিক) মানে 'আতঙ্ক' বা 'ভয়'। এটি 'Resentment' এর প্রতিশব্দ নয়।</li></ul><p>সুতরাং, 'Resentment' এর একটি প্রতিশব্দ 'Indignation'।</p>",
+        },
+        {
+          id: 8,
+          question: "Which of the following is the synonym of 'Remonstrate'?",
+          options: {
+            a: "Censure",
+            b: "Consent",
+            c: "to work",
+            d: "Residue",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'Remonstrate' (রিমন্সট্রেট) শব্দের প্রতিশব্দ জানতে চাওয়া হয়েছে। 'Remonstrate' মানে হলো 'প্রতিবাদ করা', 'আপত্তি করা' বা 'তীব্রভাবে নিন্দা করা'।</p><ul><li>Option (A) 'Censure' (সেন্সার) মানে 'তিরস্কার করা', 'নিন্দা করা' বা 'ভর্ৎসনা করা'। এটি 'Remonstrate' এর একটি ঘনিষ্ঠ প্রতিশব্দ।</li><li>Option (B) 'Consent' (কনসেন্ট) মানে 'সম্মতি' বা 'অনুমতি'। এটি 'Remonstrate' এর বিপরীত।</li><li>Option (C) 'to work' (টু ওয়ার্ক) মানে 'কাজ করা'। এটি অপ্রাসঙ্গিক।</li><li>Option (D) 'Residue' (রেজিডিউ) মানে 'অবশেষ' বা 'বাকি অংশ'। এটি অপ্রাসঙ্গিক।</li></ul><p>সুতরাং, 'Remonstrate' এর একটি প্রতিশব্দ 'Censure'।</p>",
+        },
+        {
+          id: 9,
+          question:
+            "As a result of the accident, the police revoked his driver's license.",
+          options: {
+            a: "reconsidered",
+            b: "exorcised",
+            c: "cancelled",
+            d: "investigated",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে 'revoked' (রিভোকড) শব্দের অর্থ জানতে চাওয়া হয়েছে। 'Revoked' মানে হলো 'বাতিল করা', 'প্রত্যাহার করা' বা 'অকার্যকর করা'।</p><ul><li>Option (A) 'reconsidered' (রিকনসিডার্ড) মানে 'পুনরায় বিবেচনা করা'। এটি 'revoked' এর অর্থ নয়।</li><li>Option (B) 'exorcised' (একসরসাইজড) মানে 'ভূত তাড়ানো' বা 'অমঙ্গল দূর করা'। এটি অপ্রাসঙ্গিক।</li><li>Option (C) 'cancelled' (ক্যানসেলড) মানে 'বাতিল করা' বা 'অকার্যকর করা'। এটি 'revoked' এর সবচেয়ে কাছের অর্থ।</li><li>Option (D) 'investigated' (ইনভেস্টিগেটেড) মানে 'তদন্ত করা'। এটি 'revoked' এর অর্থ নয়।</li></ul><p>সুতরাং, 'revoked' এর প্রতিশব্দ 'cancelled'।</p>",
+        },
+        {
+          id: 10,
+          question: "The campers heard a strange rustling in the trees.",
+          options: {
+            a: "stealing",
+            b: "fight",
+            c: "movement",
+            d: "pillaging",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে 'rustling' (রাসলিং) শব্দের অর্থ জানতে চাওয়া হয়েছে। 'Rustling' মানে হলো 'খসখস শব্দ', বিশেষ করে শুকনো পাতা বা কাপড় নড়ার ফলে সৃষ্ট শব্দ। এই শব্দটি সাধারণত হালকা নড়াচড়া বা চলাচলের কারণে সৃষ্ট শব্দকে বোঝায়।</p><ul><li>Option (A) 'stealing' (স্টিলিং) মানে 'চুরি করা'। এটি 'rustling' এর অর্থ নয়।</li><li>Option (B) 'fight' (ফাইট) মানে 'লড়াই' বা 'সংঘর্ষ'। এটি 'rustling' এর অর্থ নয়।</li><li>Option (C) 'movement' (মুভমেন্ট) মানে 'চলাচল' বা 'গতিবিধি'। 'Rustling' শব্দটি সাধারণত পাতার বা অন্য কিছুর হালকা নড়াচড়ার শব্দকে বোঝায়, যা 'movement' এর একটি প্রকার। এটিই সবচেয়ে উপযুক্ত অর্থ।</li><li>Option (D) 'pillaging' (পিলেজিং) মানে 'লুটপাট করা' বা 'লুণ্ঠন করা'। এটি অপ্রাসঙ্গিক।</li></ul><p>সুতরাং, 'rustling' এর সবচেয়ে কাছের অর্থ 'movement'।</p>",
+        },
+        {
+          id: 11,
+          question: "The antonym of 'scanty' is-",
+          options: {
+            a: "ample",
+            b: "limited",
+            c: "small",
+            d: "diminutive",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'scanty' (স্ক্যানটি) শব্দের বিপরীত শব্দ জানতে চাওয়া হয়েছে। 'Scanty' মানে হলো 'অপর্যাপ্ত', 'স্বল্প' বা 'কম'।</p><ul><li>Option (A) 'ample' (অ্যামপেল) মানে 'প্রচুর', 'পর্যাপ্ত' বা 'প্রচুর পরিমাণে'। এটি 'scanty' এর বিপরীত শব্দ।</li><li>Option (B) 'limited' (লিমিটেড) মানে 'সীমিত' বা 'পরিমাণে কম'। এটি 'scanty' এর প্রতিশব্দ।</li><li>Option (C) 'small' (স্মল) মানে 'ছোট' বা 'কম'। এটি 'scanty' এর প্রতিশব্দ।</li><li>Option (D) 'diminutive' (ডিমিনিউটিভ) মানে 'খুব ছোট' বা 'ক্ষুদ্রাকার'। এটি 'scanty' এর প্রতিশব্দ।</li></ul><p>সুতরাং, 'scanty' এর বিপরীত শব্দ 'ample'।</p>",
+        },
+        {
+          id: 12,
+          question: "Which is a synonym for 'regale'?",
+          options: {
+            a: "Bore",
+            b: "Tire",
+            c: "Annoy",
+            d: "Divert",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'regale' (রিগেল) শব্দের প্রতিশব্দ জানতে চাওয়া হয়েছে। 'Regale' মানে হলো 'মনোরঞ্জন করা', 'আতিথেয়তা করা' বা 'খাওয়ানো ও পান করানো'।</p><ul><li>Option (A) 'Bore' (বোর) মানে 'বিরক্ত করা' বা 'ক্লান্তিকর মনে হওয়া'। এটি 'regale' এর বিপরীত।</li><li>Option (B) 'Tire' (টায়ার) মানে 'ক্লান্ত করা'। এটি 'regale' এর বিপরীত।</li><li>Option (C) 'Annoy' (অ্যানয়) মানে 'বিরক্ত করা' বা 'ক্ষুব্ধ করা'। এটি 'regale' এর বিপরীত।</li><li>Option (D) 'Divert' (ডাইভার্ট) মানে 'মনোযোগ ঘুরিয়ে দেওয়া' বা 'বিনোদনের মাধ্যমে মনোযোগ আকর্ষণ করা'। এটি 'regale' এর একটি প্রতিশব্দ, কারণ 'regale' এর অর্থ আনন্দ বা মনোরঞ্জন প্রদান করা।</li></ul><p>সুতরাং, 'regale' এর একটি প্রতিশব্দ 'Divert'।</p>",
+        },
+        {
+          id: 13,
+          question: "Which is not a synonym of 'recapitulate'?",
+          options: {
+            a: "Recount",
+            b: "Restate",
+            c: "Regret",
+            d: "Repeat",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে 'recapitulate' (রিক্যাপিচুলেট) শব্দের কোনটি প্রতিশব্দ নয় তা জানতে চাওয়া হয়েছে। 'Recapitulate' মানে হলো 'সংক্ষেপে পুনরাবৃত্তি করা', 'সারসংক্ষেপ করা' বা 'পুনরুল্লেখ করা'।</p><ul><li>Option (A) 'Recount' (রিকাউন্ট) মানে 'পুনরায় বর্ণনা করা' বা 'বিস্তারিতভাবে বলা'। এটি 'recapitulate' এর একটি প্রতিশব্দ।</li><li>Option (B) 'Restate' (রিস্টেট) মানে 'পুনরায় উল্লেখ করা' বা 'পুনর্ব্যক্ত করা'। এটি 'recapitulate' এর একটি প্রতিশব্দ।</li><li>Option (C) 'Regret' (রিগ্রেট) মানে 'অনুশোচনা করা' বা 'দুঃখ প্রকাশ করা'। এটি 'recapitulate' এর অর্থ নয়।</li><li>Option (D) 'Repeat' (রিপিট) মানে 'পুনরাবৃত্তি করা'। এটি 'recapitulate' এর একটি প্রতিশব্দ।</li></ul><p>সুতরাং, 'Regret' হলো 'recapitulate' এর প্রতিশব্দ নয়।</p>",
+        },
+        {
+          id: 14,
+          question: "Which word is an antonym of 'querulous'?",
+          options: {
+            a: "Argumentative",
+            b: "Complaisant",
+            c: "Contentious",
+            d: "Irritable",
+          },
+          correct: "b",
+          explanation:
+            "<p>এখানে 'querulous' (ক্যুইরুলস) শব্দের বিপরীত শব্দ জানতে চাওয়া হয়েছে। 'Querulous' মানে হলো 'অভিযোগপ্রবণ', 'খিটখিটে' বা 'বিরক্তিকরভাবে অভিযোগকারী'।</p><ul><li>Option (A) 'Argumentative' (আর্গুমেন্টেটিভ) মানে 'তর্কপ্রিয়' বা 'বিতর্কপ্রবণ'। এটি 'querulous' এর প্রতিশব্দ নয়, তবে সম্পর্কিত।</li><li>Option (B) 'Complaisant' (কমপ্লাজ্যান্ট) মানে 'সন্তুষ্ট', 'নমনীয়' বা 'অন্যকে খুশি করতে আগ্রহী'। এটি 'querulous' এর বিপরীত শব্দ, কারণ 'querulous' ব্যক্তিরা অসন্তুষ্ট ও অভিযোগপ্রবণ হয়।</li><li>Option (C) 'Contentious' (কন্টেনশাস) মানে 'বিতর্কিত' বা 'ঝগড়াটে'। এটি 'querulous' এর প্রতিশব্দ।</li><li>Option (D) 'Irritable' (ইরিটেবল) মানে 'খিটখিটে' বা 'সহজেই বিরক্ত হয় এমন'। এটি 'querulous' এর প্রতিশব্দ।</li></ul><p>সুতরাং, 'querulous' এর বিপরীত শব্দ 'Complaisant'।</p>",
+        },
+        {
+          id: 15,
+          question: "Which of the following is a synonym for 'Reticent'?",
+          options: {
+            a: "Secretive",
+            b: "Confident",
+            c: "Unrestrained",
+            d: "Cautious",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'Reticent' (রেটিসেন্ট) শব্দের প্রতিশব্দ জানতে চাওয়া হয়েছে। 'Reticent' মানে হলো 'অল্পভাষী', 'নীরব' বা 'নিজের অনুভূতি বা চিন্তা প্রকাশে অনিচ্ছুক'।</p><ul><li>Option (A) 'Secretive' (সিক্রেটিভ) মানে 'গোপনতাপূর্ণ' বা 'কথা বলতে অনিচ্ছুক'। এটি 'Reticent' এর একটি শক্তিশালী প্রতিশব্দ, কারণ উভয়ই কম কথা বলার বা তথ্য গোপন রাখার প্রবণতাকে বোঝায়।</li><li>Option (B) 'Confident' (কনফিডেন্ট) মানে 'আত্মবিশ্বাসী'। এটি 'Reticent' এর বিপরীত।</li><li>Option (C) 'Unrestrained' (আনরেস্ট্রেইনড) মানে 'অসংযত' বা 'বাধাহীন'। এটি 'Reticent' এর বিপরীত।</li><li>Option (D) 'Cautious' (কশাস) মানে 'সতর্ক'। এটি 'Reticent' এর প্রতিশব্দ নয়, যদিও একজন Reticent ব্যক্তি সতর্ক হতে পারে, তবে শব্দ দুটি সমার্থক নয়।</li></ul><p>সুতরাং, 'Reticent' এর একটি প্রতিশব্দ 'Secretive'।</p>",
+        },
+        {
+          id: 16,
+          question: "The synonym of the word 'Remote' is-",
+          options: {
+            a: "immediate",
+            b: "close",
+            c: "intimate",
+            d: "distant",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'Remote' (রিমোট) শব্দের প্রতিশব্দ জানতে চাওয়া হয়েছে। 'Remote' মানে হলো 'দূরবর্তী', 'দুর্গম' বা 'অনেক দূরে অবস্থিত'।</p><ul><li>Option (A) 'immediate' (ইমিডিয়েট) মানে 'তাৎক্ষণিক' বা 'নিকটবর্তী'। এটি 'Remote' এর বিপরীত।</li><li>Option (B) 'close' (ক্লোজ) মানে 'কাছে' বা 'নিকটবর্তী'। এটি 'Remote' এর বিপরীত।</li><li>Option (C) 'intimate' (ইনটিমেট) মানে 'ঘনিষ্ঠ' বা 'আন্তরিক'। এটি 'Remote' এর বিপরীত।</li><li>Option (D) 'distant' (ডিসট্যান্ট) মানে 'দূরবর্তী' বা 'অনেক দূরে'। এটি 'Remote' এর প্রতিশব্দ।</li></ul><p>সুতরাং, 'Remote' এর প্রতিশব্দ 'distant'।</p>",
+        },
+        {
+          id: 17,
+          question:
+            "He resolved to act more wisely in the future. In the sentence 'Resolved' can be replaced by:",
+          options: {
+            a: "Promised",
+            b: "Hoped",
+            c: "Decided",
+            d: "Consented",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে 'resolved' (রিজল্ভড) শব্দের প্রতিশব্দ জানতে চাওয়া হয়েছে। এই বাক্যে 'resolved' মানে হলো 'দৃঢ় সংকল্প করা' বা 'সিদ্ধান্ত নেওয়া'।</p><ul><li>Option (A) 'Promised' (প্রমিজড) মানে 'প্রতিশ্রুতি দেওয়া'। এটি 'resolved' এর কাছাকাছি হলেও, 'resolved' মানে আরও দৃঢ় সিদ্ধান্ত।</li><li>Option (B) 'Hoped' (হোপড) মানে 'আশা করা'। এটি 'resolved' এর অর্থ নয়।</li><li>Option (C) 'Decided' (ডিসাইডেড) মানে 'সিদ্ধান্ত নেওয়া' বা 'মনস্থির করা'। এটি 'resolved' এর সবচেয়ে কাছের অর্থ, কারণ 'resolve' মানে একটি দৃঢ় সিদ্ধান্ত নেওয়া।</li><li>Option (D) 'Consented' (কনসেন্টেড) মানে 'সম্মতি দেওয়া'। এটি 'resolved' এর অর্থ নয়।</li></ul><p>সুতরাং, 'resolved' কে 'Decided' দ্বারা প্রতিস্থাপন করা যেতে পারে।</p>",
+        },
+        {
+          id: 18,
+          question: "Repeal is the antonym of-",
+          options: {
+            a: "Abolish",
+            b: "Enact",
+            c: "Annul",
+            d: "Nullify",
+          },
+          correct: "b",
+          explanation:
+            "<p>এখানে 'Repeal' (রিপিল) শব্দের বিপরীত শব্দ জানতে চাওয়া হয়েছে। 'Repeal' মানে হলো 'বাতিল করা' বা 'আইন বাতিল করা'।</p><ul><li>Option (A) 'Abolish' (অ্যাবলিশ) মানে 'বাতিল করা' বা 'লোপ করা'। এটি 'Repeal' এর প্রতিশব্দ।</li><li>Option (B) 'Enact' (ইন্যাক্ট) মানে 'আইন প্রণয়ন করা' বা 'কার্যকর করা'। এটি 'Repeal' এর বিপরীত শব্দ।</li><li>Option (C) 'Annul' (অ্যানাল) মানে 'বাতিল করা' বা 'অকার্যকর করা'। এটি 'Repeal' এর প্রতিশব্দ।</li><li>Option (D) 'Nullify' (নালিফাই) মানে 'বাতিল করা' বা 'অকার্যকর করা'। এটি 'Repeal' এর প্রতিশব্দ।</li></ul><p>সুতরাং, 'Repeal' এর বিপরীত শব্দ 'Enact'।</p>",
+        },
+        {
+          id: 19,
+          question: "The antonym for 'Recalcitrant'-",
+          options: {
+            a: "Compliant",
+            b: "Passive",
+            c: "Indifferent",
+            d: "Careful",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'Recalcitrant' (রিক্যালসিট্রেন্ট) শব্দের বিপরীত শব্দ জানতে চাওয়া হয়েছে। 'Recalcitrant' মানে হলো 'অবাধ্য', 'অনমনীয়', বা 'সহজেই নিয়ন্ত্রণ করা যায় না এমন'।</p><ul><li>Option (A) 'Compliant' (কমপ্লায়েন্ট) মানে 'আনুগত্যশীল', 'নমনীয়' বা 'সহযোগী'। এটি 'Recalcitrant' এর বিপরীত শব্দ।</li><li>Option (B) 'Passive' (প্যাসিভ) মানে 'নিষ্ক্রিয়' বা 'নিরপেক্ষ'। এটি 'Recalcitrant' এর সরাসরি বিপরীত নয়, কারণ Passive ব্যক্তি অবাধ্য নাও হতে পারে, তবে সহজে মানিয়ে নিতে পারে।</li><li>Option (C) 'Indifferent' (ইনডিফারেন্ট) মানে 'উদাসীন' বা 'নিরপেক্ষ'। এটি 'Recalcitrant' এর অর্থ নয়।</li><li>Option (D) 'Careful' (কেয়ারফুল) মানে 'সতর্ক'। এটি 'Recalcitrant' এর অর্থ নয়।</li></ul><p>সুতরাং, 'Recalcitrant' এর বিপরীত শব্দ 'Compliant'।</p>",
+        },
+        {
+          id: 20,
+          question: "Ruminant means-",
+          options: {
+            a: "Soup",
+            b: "Cud-chewing animal",
+            c: "Gossip",
+            d: "Noise-maker",
+          },
+          correct: "b",
+          explanation:
+            "<p>এখানে 'Ruminant' (রুমিন্যান্ট) শব্দের অর্থ জানতে চাওয়া হয়েছে। 'Ruminant' হলো একটি প্রাণী যা খাদ্য খাওয়ার পর অর্ধ-হজম হওয়া খাদ্য (cud) আবার মুখে এনে চিবিয়ে হজম করে। যেমন: গরু, ছাগল, ভেড়া ইত্যাদি।</p><ul><li>Option (A) 'Soup' (সুপ) মানে 'স্যুপ' বা 'তরল খাদ্য'। এটি অপ্রাসঙ্গিক।</li><li>Option (B) 'Cud-chewing animal' (কাড-চিইং অ্যানিমেল) মানে 'জাবর কাটা প্রাণী'। এটি 'Ruminant' এর সঠিক সংজ্ঞা।</li><li>Option (C) 'Gossip' (গসিপ) মানে 'গল্প গুজব' বা 'পরচর্চা'। এটি অপ্রাসঙ্গিক।</li><li>Option (D) 'Noise-maker' (নয়েজ-মেকার) মানে 'শব্দ সৃষ্টিকারী'। এটি অপ্রাসঙ্গিক।</li></ul><p>সুতরাং, 'Ruminant' মানে 'Cud-chewing animal' (জাবর কাটা প্রাণী)।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                                                          <label class="option" data-option="${option}">
+                                                                            <div class="circle">${option}</div>
+                                                                            <span class="option-text">${question.options[option]}</span>
+                                                                          </label>
+                                                                        `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                             <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                             <div class="explanation-content">
+                                                                               <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                               ${question.explanation}
+                                                                             </div>
+                                                                           </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                        <p class="question-label">${
+                                                                          index +
+                                                                          1
+                                                                        }. ${
+            question.question
+          }</p>
+                                                                        <div class="options">
+                                                                          ${optionsHTML}
+                                                                        </div>
+                                                                        ${explanationHTML}
+                                                                      `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
